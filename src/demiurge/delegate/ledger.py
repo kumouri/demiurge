@@ -37,6 +37,11 @@ def record_delegation(
     return entry
 
 
+def is_delegation(entry: dict[str, Any]) -> bool:
+    """True for delegation entries (verdicts and future entry types carry a ``type``)."""
+    return entry.get("type", "delegation") == "delegation"
+
+
 def read_ledger(archon_dir: Path | str) -> list[dict[str, Any]]:
     """All ledger entries for an Archon, oldest first."""
     ledger_path = Path(archon_dir) / LEDGER_FILENAME

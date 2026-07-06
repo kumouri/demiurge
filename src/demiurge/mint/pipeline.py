@@ -66,7 +66,7 @@ class MintResult:
         return self.archon_dir / RECORD_FILENAME
 
 
-def build_spec(need: NeedStatement) -> ArchonSpec:
+def build_spec(need: NeedStatement, *, version: str = "0.1.0") -> ArchonSpec:
     """Assemble the Agent Format document for a need (pure; no I/O)."""
     instructions = _compose_instructions(need)
     action_space = None
@@ -87,7 +87,7 @@ def build_spec(need: NeedStatement) -> ArchonSpec:
         metadata=Metadata(
             id=need.id,
             name=need.title,
-            version="0.1.0",
+            version=version,
             description=need.task,
             labels={"minted_by": "demiurge", "lifecycle": "specced"},
         ),
