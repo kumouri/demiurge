@@ -4,6 +4,7 @@ demiurge mint <need.yaml> [--stable-dir DIR]   mint an Archon from a need statem
 demiurge validate <file.agf.yaml>              validate any Agent Format document
 demiurge scaffold <archon-id>                  generate a runnable project for an Archon
 demiurge deploy <archon-id> [--port N]         scaffold (if needed) and serve over A2A
+demiurge delegate <archon-id> <text>           send a task to a running Archon; record it
 """
 
 import argparse
@@ -14,6 +15,7 @@ import yaml
 from pydantic import ValidationError
 
 from demiurge.adapters import DeployError, get_adapter
+from demiurge.delegate import DelegationError, delegate, record_delegation
 from demiurge.mint.need import load_need
 from demiurge.mint.pipeline import MintError, mint
 from demiurge.spec.validate import validate_document
@@ -66,6 +68,19 @@ def main(argv: list[str] | None = None) -> int:
         help="seconds to wait for the Archon to become healthy (default: 300)",
     )
 
+    delegate_parser = subparsers.add_parser(
+        "delegate", help="send a task to a running Archon and record it in the ledger"
+    )
+    delegate_parser.add_argument("archon_id", help="id of a minted Archon in the stable")
+    delegate_parser.add_argument("text", help="the task to delegate")
+    delegate_parser.add_argument("--stable-dir", type=Path, default=Path("stable"))
+    delegate_parser.add_argument(
+        "--endpoint",
+        default="http://127.0.0.1:9999",
+        help="base URL of the running Archon (default: http://127.0.0.1:9999)",
+    )
+    delegate_parser.add_argument("--timeout", type=float, default=300.0)
+
     args = parser.parse_args(argv)
     if args.command == "mint":
         return _cmd_mint(args.need, args.stable_dir)
@@ -73,6 +88,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_scaffold(args)
     if args.command == "deploy":
         return _cmd_deploy(args)
+    if args.command == "delegate":
+        return _cmd_delegate(args)
     return _cmd_validate(args.file)
 
 
@@ -128,6 +145,22 @@ def _cmd_deploy(args: argparse.Namespace) -> int:
     except KeyboardInterrupt:
         deployment.teardown()
         print(f"archon '{deployment.archon_id}' stopped")
+    return 0
+
+
+def _cmd_delegate(args: argparse.Namespace) -> int:
+    archon_dir = args.stable_dir / args.archon_id
+    if not archon_dir.is_dir():
+        print(f"demiurge: no archon '{args.archon_id}' in {args.stable_dir}", file=sys.stderr)
+        return 2
+    try:
+        result = delegate(args.endpoint, args.text, timeout=args.timeout)
+    except DelegationError as error:
+        print(f"demiurge: {error}", file=sys.stderr)
+        return 1
+    record_delegation(archon_dir, args.text, result)
+    print(f"state: {result.state} ({result.duration_seconds}s)")
+    print(result.text)
     return 0
 
 
