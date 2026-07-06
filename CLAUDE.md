@@ -22,9 +22,15 @@ schema in `src/demiurge/spec/schemas/` — re-vendor deliberately, never hand-ed
 `demiurge.adapters` (runtime adapter contract + the `claude-sdk` reference adapter, ADR 0005 —
 scaffolds a standalone uv project with a generic `server.py` serving the spec over A2A; templates
 live under `adapters/templates/`), `demiurge.delegate` (A2A client + the append-only per-Archon
-task ledger `stable/<id>/ledger.jsonl` that curation reads), and `demiurge.cli` (`mint` /
-`validate` / `scaffold` / `deploy` / `delegate`; example need in `examples/`). Generated
-`scaffolds/` and `deploy.log` are gitignored.
+task ledger `stable/<id>/ledger.jsonl` that curation reads), `demiurge.curate` (the fused loop:
+eval runner + admission gate with a pluggable judge — v1 `BaselineJudge` is deterministic and
+treats natural-language `expect` as advisory; verdicts + tenure heuristics over the ledger;
+`distill_failure` turns a failed task into an `origin: field-failure` eval case; `revise`
+re-mints with a minor version bump, keeps every failure-derived case, and drops the Archon back
+to `specced` until it re-passes the gate), and `demiurge.cli` (`mint` / `validate` / `scaffold` /
+`deploy` / `delegate` / `admit` / `verdict` / `distill` / `tenure` / `retire` / `revise`; example
+need in `examples/`). Generated `scaffolds/` and `deploy.log` are gitignored. Tests share a real
+in-process a2a-sdk echo agent (`tests/conftest.py`).
 
 - `uv sync` — create/refresh the environment (dev group included).
 - `uv run pytest` — tests.
