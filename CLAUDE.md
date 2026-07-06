@@ -18,9 +18,11 @@ ADR for any decision of that weight; never silently reverse one.
 Python ≥ 3.12, managed with **uv** (`src/` layout, hatchling build backend). Core modules:
 `demiurge.spec` (typed Agent Format models + YAML emission + validation against the **vendored**
 schema in `src/demiurge/spec/schemas/` — re-vendor deliberately, never hand-edit), `demiurge.mint`
-(need statement → spec + charter + evals seed + lifecycle record under `stable/<id>/`), and
-`demiurge.cli` (`uv run demiurge mint <need.yaml>` / `demiurge validate <file.agf.yaml>`; example
-need in `examples/`).
+(need statement → spec + charter + evals seed + lifecycle record under `stable/<id>/`),
+`demiurge.adapters` (runtime adapter contract + the `claude-sdk` reference adapter, ADR 0005 —
+scaffolds a standalone uv project with a generic `server.py` serving the spec over A2A; templates
+live under `adapters/templates/`), and `demiurge.cli` (`mint` / `validate` / `scaffold` / `deploy`;
+example need in `examples/`). Generated `scaffolds/` and `deploy.log` are gitignored.
 
 - `uv sync` — create/refresh the environment (dev group included).
 - `uv run pytest` — tests.
