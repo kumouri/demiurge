@@ -92,6 +92,13 @@ README.
 
 *Exit: the v1 definition of done, recorded.*
 
+## Kill criteria
+
+This project nearly got shelved before it started, and that doubt stays on the record: the
+honest conditions under which Demiurge should be declared dead — persistence losing to ad-hoc
+spawning, the curation loop never closing, the standards it rides dying, or a runtime
+absorbing the loop natively — live in [docs/why-demiurge.md](docs/why-demiurge.md).
+
 ## Risks
 
 - **Full lifecycle is wide for a v1.** Mitigation: each phase demos standalone; the loop only
