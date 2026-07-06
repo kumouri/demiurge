@@ -11,6 +11,10 @@ build/
 .env.*
 !.env.example
 
+# Runtime artifacts (generated scaffolds are reproducible from the stable)
+scaffolds/
+deploy.log
+
 # Tooling caches
 .pytest_cache/
 .ruff_cache/
