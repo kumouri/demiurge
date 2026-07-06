@@ -21,8 +21,10 @@ schema in `src/demiurge/spec/schemas/` — re-vendor deliberately, never hand-ed
 (need statement → spec + charter + evals seed + lifecycle record under `stable/<id>/`),
 `demiurge.adapters` (runtime adapter contract + the `claude-sdk` reference adapter, ADR 0005 —
 scaffolds a standalone uv project with a generic `server.py` serving the spec over A2A; templates
-live under `adapters/templates/`), and `demiurge.cli` (`mint` / `validate` / `scaffold` / `deploy`;
-example need in `examples/`). Generated `scaffolds/` and `deploy.log` are gitignored.
+live under `adapters/templates/`), `demiurge.delegate` (A2A client + the append-only per-Archon
+task ledger `stable/<id>/ledger.jsonl` that curation reads), and `demiurge.cli` (`mint` /
+`validate` / `scaffold` / `deploy` / `delegate`; example need in `examples/`). Generated
+`scaffolds/` and `deploy.log` are gitignored.
 
 - `uv sync` — create/refresh the environment (dev group included).
 - `uv run pytest` — tests.
