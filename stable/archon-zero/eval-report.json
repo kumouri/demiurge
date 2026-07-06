@@ -1,0 +1,44 @@
+{
+  "archon": "archon-zero",
+  "endpoint": "http://127.0.0.1:9999",
+  "ran_at": "2026-07-06T21:42:39+00:00",
+  "passed": true,
+  "results": [
+    {
+      "case_id": "smoke-responds",
+      "origin": "mint",
+      "passed": true,
+      "checks": [
+        "ok completed with non-error text",
+        "ok claude judge (claude-opus-4-8): The response clearly describes the agent's task of authoring and maintaining eval cases, drafting from capabilities and field failures, and reviewing for staleness, consistent with the charter."
+      ],
+      "state": "TASK_STATE_COMPLETED",
+      "judged_by": "claude",
+      "response_text": "I'm Archon Zero, a specialized agent minted by Demiurge with a narrow, fixed charter: I author and maintain Demiurge's **eval cases**.\n\nConcretely, I can:\n1. **Draft new eval cases** (id, description, input, expect) from a capability description you give me.\n2. **Distill a recorded field failure** into a regression eval case (`origin: field-failure`).\n3. **Review existing eval cases** for staleness against the current charter and flag ones that no longer match.\n\nI don't mint, deploy, delegate, or modify code/specs/adapters — that's Demiurge's job, not mine. If you ask for something outside this scope, I'll say so and stop rather than improvise.\n\nWhat would you like me to work on — a new capability to turn into eval cases, a field failure to distill, or a staleness review of an existing eval set?"
+    },
+    {
+      "case_id": "capability-1",
+      "origin": "mint",
+      "passed": true,
+      "checks": [
+        "ok completed with non-error text",
+        "ok claude judge (claude-opus-4-8): The response drafts a complete eval case with id, description, input, and expect derived from a capability description, satisfying the expectation."
+      ],
+      "state": "TASK_STATE_COMPLETED",
+      "judged_by": "claude",
+      "response_text": "Here's a representative demonstration of the capability **\"Draft an eval case from a capability description.\"**\n\n**Input capability description** (as it might appear in an Archon's charter/spec):\n\n> \"The Archon can parse a raw customer support email and extract a structured summary: the customer's core issue, their requested resolution, and an urgency rating (low/medium/high).\"\n\n**Drafted eval case:**\n\n```yaml\nid: support-triage-extract-001\ndescription: >\n  Given a raw, informally-written support email, the Archon must extract a\n  structured triage summary (issue, requested resolution, urgency) rather\n  than a free-form paraphrase or a response to the customer.\norigin: capability\ninput: |\n  Subject: order still hasn't shipped, need it by friday!!\n\n  Hi, I ordered a birthday gift (order #48213) six days ago and it still\n  shows \"processing.\" I need this to arrive by Friday for my daughter's\n  party or it's useless to me. Can you either rush shipping or refund me\n  so I can buy it locally? Getting pretty frustrated, this is the second\n  time this has happened with your store.\nexpect: >\n  Output is structured (not a conversational reply) and includes three\n  identifiable fields: (1) issue — order #48213 delayed/stuck in\n  \"processing\" status; (2) requested resolution — either expedited\n  shipping to arrive by Friday, or a refund; (3) urgency — rated\n  medium-to-high, justified by the hard Friday deadline and the customer\n  noting this is a repeat problem. Must not fabricate details absent from\n  the email (e.g., a specific ship date) and must not address the\n  customer directly (\"Dear customer...\").\n```\n\n**Why these choices:**\n- **`id`** is slug-like and scoped to the capability area, so it composes cleanly alongside other eval cases for the same Archon.\n- **`input`** is realistic and messy (typos, run-on urgency, implicit ask) rather than a clean textbook example — it's the kind of case that actually discriminates a working extractor from a shallow one.\n- **`expect`** is written as natural-language criteria (per Demiurge's `expect`-as-advisory convention) that a judge — `BaselineJudge` or `ClaudeJudge` — can assess, and it explicitly rules out failure modes (fabrication, wrong output shape) rather than just restating the happy path.\n- **`origin: capability`** marks this as authored from a charter description, distinguishing it from `origin: field-failure` cases distilled from real ledger incidents.\n\nThis is illustrative only — I don't have write access to a specific Archon's `stable/<id>/` eval file from this session, so nothing was persisted. If you want this committed against a real Archon's evals, point me at the target stable directory and capability list."
+    },
+    {
+      "case_id": "capability-2",
+      "origin": "mint",
+      "passed": true,
+      "checks": [
+        "ok completed with non-error text",
+        "ok claude judge (claude-opus-4-8): The response demonstrates the full pipeline of distilling a recorded field failure (ledger delegation + verdict entries) into a regression EvalCase, showing the distill_failure call and resulting eval case with faithful mechanics, satisfying the expectation."
+      ],
+      "state": "TASK_STATE_COMPLETED",
+      "judged_by": "claude",
+      "response_text": "Here's a worked example of the full **field-failure → regression eval case** pipeline, following the exact shapes used by `demiurge.curate.distill.distill_failure` and `EvalCase` (`src/demiurge/curate/evals.py`).\n\n## 1. Recorded field failure (from `stable/<archon-id>/ledger.jsonl`)\n\nDelegation entry:\n```json\n{\"type\": \"delegation\", \"delegated_at\": \"2026-07-03T14:22:10Z\", \"request\": \"Cancel my subscription and confirm the effective end date.\", \"response\": \"I can help with subscriptions! Please tell me more about what you'd like to do.\", \"state\": \"TASK_STATE_COMPLETED\", \"task_id\": \"task-8f21\", \"duration_seconds\": 1.84}\n```\n\nVerdict entry (recorded via `record_verdict`):\n```json\n{\"type\": \"verdict\", \"task_id\": \"task-8f21\", \"verdict\": \"failure\", \"note\": \"asked for clarification instead of executing the cancellation the user already fully specified\"}\n```\n\nThe Archon was delegated an unambiguous cancellation request and stalled with a clarifying question instead of acting — a real behavioral gap worth locking into a regression test.\n\n## 2. Distillation call\n\n```python\ndistill_failure(\n    archon_dir,\n    task_id=\"task-8f21\",\n    note=\"must cancel the subscription and state the effective end date, not ask for clarification when the request is already unambiguous\",\n    expect_contains=[\"cancel\", \"effective date\"],\n)\n```\n\n## 3. Resulting `EvalCase` (appended to `evals.yaml`)\n\n```yaml\n- id: field-failure-1\n  origin: field-failure\n  description: >-\n    must cancel the subscription and state the effective end date, not ask\n    for clarification when the request is already unambiguous\n  input:\n    query: Cancel my subscription and confirm the effective end date.\n  expect: >-\n    must cancel the subscription and state the effective end date, not ask\n    for clarification when the request is already unambiguous\n  expect_contains:\n    - cancel\n    - effective date\n```\n\nNote the mechanics reproduced faithfully: `id` auto-increments off existing `field-failure-*` cases in the suite; `input.query` is copied verbatim from the failed ledger `request` (not rewritten); `expect` is set to the same `note` text used for `description`; `expect_contains` is optional and only enforced by `ClaudeJudge`, not `BaselineJudge`. This case now gates every future `admit`/`revise` run for that Archon, so a re-occurrence of the same failure blocks tenure.\n\nThis was a synthetic illustration — I didn't pull it from a real `stable/*/ledger.jsonl` (none contained a failed task at the time I checked). Say the word if you want me to distill an actual recorded failure for a specific Archon instead."
+    }
+  ]
+}

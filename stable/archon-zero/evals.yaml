@@ -1,0 +1,30 @@
+archon: archon-zero
+schema: demiurge-evals/v1
+cases:
+- id: smoke-responds
+  origin: mint
+  description: Produces a non-empty, on-task response to a basic request.
+  input:
+    query: 'Briefly: what do you do? Task context: Author and maintain Demiurge''s
+      eval cases: draft new eval cases from capability descriptions and from recorded
+      field failures, and review existing cases for staleness against the current
+      charter.'
+  expect: A non-empty response consistent with the charter's task.
+- id: capability-1
+  origin: mint
+  description: 'Demonstrates: Draft an eval case (id, description, input, expect)
+    from a capability description'
+  input:
+    query: 'Demonstrate, on a representative example: Draft an eval case (id, description,
+      input, expect) from a capability description'
+  expect: 'Evidence of the capability: Draft an eval case (id, description, input,
+    expect) from a capability description'
+- id: capability-2
+  origin: mint
+  description: 'Demonstrates: Distill a recorded field failure into a regression eval
+    case'
+  input:
+    query: 'Demonstrate, on a representative example: Distill a recorded field failure
+      into a regression eval case'
+  expect: 'Evidence of the capability: Distill a recorded field failure into a regression
+    eval case'
