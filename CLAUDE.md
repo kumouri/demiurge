@@ -15,7 +15,12 @@ ADR for any decision of that weight; never silently reverse one.
 
 ## Stack & commands
 
-Python ≥ 3.12, managed with **uv** (`src/` layout, hatchling build backend).
+Python ≥ 3.12, managed with **uv** (`src/` layout, hatchling build backend). Core modules:
+`demiurge.spec` (typed Agent Format models + YAML emission + validation against the **vendored**
+schema in `src/demiurge/spec/schemas/` — re-vendor deliberately, never hand-edit), `demiurge.mint`
+(need statement → spec + charter + evals seed + lifecycle record under `stable/<id>/`), and
+`demiurge.cli` (`uv run demiurge mint <need.yaml>` / `demiurge validate <file.agf.yaml>`; example
+need in `examples/`).
 
 - `uv sync` — create/refresh the environment (dev group included).
 - `uv run pytest` — tests.

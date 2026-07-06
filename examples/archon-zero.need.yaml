@@ -1,0 +1,21 @@
+id: archon-zero
+title: Archon Zero
+task: >-
+  Author and maintain Demiurge's eval cases: draft new eval cases from capability
+  descriptions and from recorded field failures, and review existing cases for
+  staleness against the current charter.
+why_persistent: >-
+  Eval authoring recurs on every mint and every field failure for the life of the
+  project, and accumulates house style worth curating — the definitional test of a
+  persistent Archon over a throwaway subagent.
+capabilities:
+  - Draft an eval case (id, description, input, expect) from a capability description
+  - Distill a recorded field failure into a regression eval case
+tool_grants:
+  - alias: repo
+    server_ref: filesystem-mcp
+    description: Read Demiurge's stable and eval files
+    allowed_tools: [read_file, list_directory]
+budget:
+  max_token_usage: 200000
+  max_duration_seconds: 600
