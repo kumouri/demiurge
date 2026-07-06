@@ -20,11 +20,17 @@ Python ≥ 3.12, managed with **uv** (`src/` layout, hatchling build backend). C
 schema in `src/demiurge/spec/schemas/` — re-vendor deliberately, never hand-edit), `demiurge.mint`
 (need statement → spec + charter + evals seed + lifecycle record under `stable/<id>/`),
 `demiurge.adapters` (runtime adapter contract + the `claude-sdk` reference adapter, ADR 0005 —
-scaffolds a standalone uv project with a generic `server.py` serving the spec over A2A; templates
-live under `adapters/templates/`), `demiurge.delegate` (A2A client + the append-only per-Archon
+scaffolds a standalone uv project with a generic `server.py` serving the spec over A2A; the spec's
+MCP `server_ref` grants map onto `ClaudeAgentOptions.mcp_servers` via a runtime-owner
+`mcp-servers.json` (seeded as `mcp-servers.example.json`); deploy passes a set
+`ANTHROPIC_API_KEY_DEMIURGE` through to the Archon as `ANTHROPIC_API_KEY`; templates live under
+`adapters/templates/`), `demiurge.delegate` (A2A client + the append-only per-Archon
 task ledger `stable/<id>/ledger.jsonl` that curation reads), `demiurge.curate` (the fused loop:
-eval runner + admission gate with a pluggable judge — v1 `BaselineJudge` is deterministic and
-treats natural-language `expect` as advisory; verdicts + tenure heuristics over the ledger;
+eval runner + admission gate with a pluggable judge — `BaselineJudge` is deterministic and treats
+natural-language `expect` as advisory; `ClaudeJudge` (`demiurge admit --judge claude`) also
+enforces `expect` via the Claude API with structured-output verdicts, failing closed on judge
+errors — auth via `ANTHROPIC_API_KEY_DEMIURGE` (preferred) or SDK defaults, optional dep
+`demiurge[judge]`; verdicts + tenure heuristics over the ledger;
 `distill_failure` turns a failed task into an `origin: field-failure` eval case; `revise`
 re-mints with a minor version bump, keeps every failure-derived case, and drops the Archon back
 to `specced` until it re-passes the gate), and `demiurge.cli` (`mint` / `validate` / `scaffold` /
