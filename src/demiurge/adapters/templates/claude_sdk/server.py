@@ -6,6 +6,7 @@ and holds no per-Archon logic.
 """
 
 import argparse
+import json
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +28,40 @@ from a2a.types.a2a_pb2 import TaskState
 from starlette.applications import Starlette
 
 SPEC_PATH = Path(__file__).resolve().parent / "archon.agf.yaml"
+MCP_CONFIG_PATH = Path(__file__).resolve().parent / "mcp-servers.json"
+
+
+def mcp_options(
+    spec: dict[str, Any], config_path: Path = MCP_CONFIG_PATH
+) -> tuple[dict[str, Any], list[str]]:
+    """Map the spec's mcp_servers grants onto Claude Agent SDK options.
+
+    The spec declares portable grants (alias, server_ref, allowed_tools); the
+    Agent Format standard assigns mapping server_ref to real connection
+    details to the runtime owner. That mapping lives in mcp-servers.json next
+    to this file (see README). Returns (mcp_servers, allowed_tools); grants
+    with no mapping entry are skipped — the Archon simply runs without them.
+    """
+    grants = (spec.get("action_space") or {}).get("mcp_servers") or []
+    if not grants or not config_path.is_file():
+        return {}, []
+    mapping = json.loads(config_path.read_text(encoding="utf-8"))
+    servers: dict[str, Any] = {}
+    allowed_tools: list[str] = []
+    for grant in grants:
+        alias = grant["alias"]
+        connection = mapping.get(alias)
+        if connection is None:
+            continue
+        servers[alias] = connection
+        tools = grant.get("allowed_tools") or []
+        if tools:
+            allowed_tools.extend(
+                f"mcp__{alias}__{tool if isinstance(tool, str) else tool['name']}" for tool in tools
+            )
+        else:
+            allowed_tools.append(f"mcp__{alias}")  # whole-server grant
+    return servers, allowed_tools
 
 
 class ArchonExecutor(AgentExecutor):
@@ -37,6 +72,7 @@ class ArchonExecutor(AgentExecutor):
         self._instructions: str = config["instructions"]
         self._model: str | None = config.get("model")
         self._max_steps: int = int(config.get("max_steps", 10))
+        self._mcp_servers, self._allowed_tools = mcp_options(spec)
 
     async def _invoke(self, user_request: str) -> str:
         # Imported lazily so the server can boot and serve its agent card
@@ -47,6 +83,8 @@ class ArchonExecutor(AgentExecutor):
             system_prompt=self._instructions,
             model=self._model,
             max_turns=self._max_steps,
+            mcp_servers=self._mcp_servers,
+            allowed_tools=self._allowed_tools,
         )
         chunks: list[str] = []
         async for message in query(prompt=user_request, options=options):

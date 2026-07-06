@@ -13,11 +13,25 @@ JSON-RPC at `/`. The server boots and serves its card without LLM auth.
 
 Delegated tasks execute the spec's `agf.react` policy on the Claude Agent SDK.
 Authentication follows the SDK's normal rules (`ANTHROPIC_API_KEY`, or a
-Claude Code login).
+Claude Code login). When deployed via `demiurge deploy`, a set
+`ANTHROPIC_API_KEY_DEMIURGE` is passed through to the Archon as
+`ANTHROPIC_API_KEY` so Demiurge's spend stays on its own key.
 
 ## Tool grants
 
 MCP servers declared in the spec's `action_space.mcp_servers` carry portable
-`server_ref` identities. Mapping those to real connection details is the
-runtime owner's job (as the Agent Format spec assigns it): wire them into
-`ClaudeAgentOptions.mcp_servers` in `server.py` for this deployment.
+`server_ref` identities; mapping those to real connection details is the
+runtime owner's job (as the Agent Format spec assigns it). To wire them up:
+
+1. Copy `mcp-servers.example.json` (generated when the spec declares grants)
+   to `mcp-servers.json`.
+2. Replace each entry with the real connection config for that server, in
+   Claude Agent SDK `mcp_servers` format — e.g.
+   `{"command": "npx", "args": ["-y", "some-mcp-server"], "env": {}}` or
+   `{"type": "http", "url": "https://..."}`.
+
+At boot, `server.py` maps each granted alias onto `ClaudeAgentOptions.mcp_servers`
+and allows exactly the spec's `allowed_tools` (`mcp__<alias>__<tool>`; a grant
+without `allowed_tools` allows the whole server). Grants with no entry in
+`mcp-servers.json` are skipped — the Archon runs without them. Keep
+`mcp-servers.json` out of version control if it holds secrets.

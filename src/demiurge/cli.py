@@ -102,6 +102,18 @@ def main(argv: list[str] | None = None) -> int:
     admit_parser.add_argument("--endpoint", default="http://127.0.0.1:9999")
     admit_parser.add_argument("--stable-dir", type=Path, default=Path("stable"))
     admit_parser.add_argument("--timeout", type=float, default=300.0)
+    admit_parser.add_argument(
+        "--judge",
+        choices=("baseline", "claude"),
+        default="baseline",
+        help="baseline = deterministic checks only; claude = also enforce natural-language "
+        "'expect' criteria via the Claude API (needs anthropic auth)",
+    )
+    admit_parser.add_argument(
+        "--judge-model",
+        default=None,
+        help="model for --judge claude (default: claude-opus-4-8)",
+    )
 
     verdict_parser = subparsers.add_parser("verdict", help="record a judgment on a delegated task")
     verdict_parser.add_argument("archon_id")
@@ -251,8 +263,17 @@ def _cmd_curate(args: argparse.Namespace) -> int:
         return 2
 
     if args.command == "admit":
+        judge = None
+        if args.judge == "claude":
+            from demiurge.curate.judge_llm import DEFAULT_JUDGE_MODEL, ClaudeJudge
+
+            try:
+                judge = ClaudeJudge(model=args.judge_model or DEFAULT_JUDGE_MODEL)
+            except ImportError as error:
+                print(f"demiurge: {error}", file=sys.stderr)
+                return 2
         try:
-            report = admit(archon_dir, args.endpoint, timeout=args.timeout)
+            report = admit(archon_dir, args.endpoint, judge=judge, timeout=args.timeout)
         except DelegationError as error:
             print(f"demiurge: {error}", file=sys.stderr)
             return 1

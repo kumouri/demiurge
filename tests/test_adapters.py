@@ -47,6 +47,60 @@ def test_scaffold_generates_a_runnable_project_layout(tmp_path):
     assert "Scaffold Target" in (result.scaffold_dir / "README.md").read_text(encoding="utf-8")
 
 
+def test_scaffold_wires_mcp_grants_into_the_generated_server(tmp_path):
+    import importlib.util
+    import json
+
+    need = NeedStatement.model_validate(
+        {
+            "id": "mcp-archon",
+            "title": "MCP Archon",
+            "task": "Exercise MCP grant wiring.",
+            "why_persistent": "Recurring test fixture for MCP wiring.",
+            "capabilities": ["Use granted tools"],
+            "tool_grants": [
+                {
+                    "alias": "github",
+                    "server_ref": "github-mcp",
+                    "allowed_tools": ["list_pull_requests"],
+                },
+                {"alias": "notion", "server_ref": "notion-mcp"},
+            ],
+        }
+    )
+    minted = mint(need, tmp_path / "stable")
+    adapter = get_adapter("claude-sdk")
+    result = adapter.scaffold(minted.archon_dir, tmp_path / "scaffolds")
+
+    # the runtime-owner mapping seed exists, one entry per grant
+    example = json.loads(
+        (result.scaffold_dir / "mcp-servers.example.json").read_text(encoding="utf-8")
+    )
+    assert set(example) == {"github", "notion"}
+    assert example["github"]["server_ref"] == "github-mcp"
+
+    # load the actual generated server and exercise its mapping logic
+    spec_module = importlib.util.spec_from_file_location(
+        "generated_server", result.scaffold_dir / "server.py"
+    )
+    server = importlib.util.module_from_spec(spec_module)
+    spec_module.loader.exec_module(server)
+
+    spec = yaml.safe_load((result.scaffold_dir / "archon.agf.yaml").read_text(encoding="utf-8"))
+    mapping_path = result.scaffold_dir / "mcp-servers.json"
+    mapping_path.write_text(
+        json.dumps({"github": {"command": "npx", "args": ["-y", "github-mcp"]}}),
+        encoding="utf-8",
+    )
+    servers, allowed = server.mcp_options(spec, config_path=mapping_path)
+    assert servers == {"github": {"command": "npx", "args": ["-y", "github-mcp"]}}
+    assert allowed == ["mcp__github__list_pull_requests"]  # unmapped 'notion' grant skipped
+
+    # no mapping file at all -> no MCP wiring, no error
+    servers, allowed = server.mcp_options(spec, config_path=result.scaffold_dir / "absent.json")
+    assert (servers, allowed) == ({}, [])
+
+
 def test_scaffold_requires_a_minted_spec(tmp_path):
     adapter = get_adapter("claude-sdk")
     with pytest.raises(FileNotFoundError, match="mint the Archon first"):
