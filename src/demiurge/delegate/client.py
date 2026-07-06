@@ -33,21 +33,27 @@ class DelegationResult:
 async def delegate_async(endpoint: str, text: str, *, timeout: float = 300.0) -> DelegationResult:
     """Send ``text`` as a task to the Archon at ``endpoint`` and await the outcome."""
     started = time.monotonic()
-    try:
-        async with httpx.AsyncClient(timeout=timeout) as httpx_client:
+    # One long-timeout httpx client for both card resolution and the task
+    # itself — an Archon's reasoning turn can take minutes, far beyond httpx
+    # defaults, and create_client would otherwise build its own default client.
+    async with httpx.AsyncClient(timeout=httpx.Timeout(timeout, connect=10.0)) as httpx_client:
+        try:
             resolver = A2ACardResolver(httpx_client=httpx_client, base_url=endpoint)
             card = await resolver.get_agent_card()
-    except (httpx.HTTPError, A2AClientError) as error:
-        raise DelegationError(f"cannot reach archon at {endpoint}: {error}") from error
+        except (httpx.HTTPError, A2AClientError) as error:
+            raise DelegationError(f"cannot reach archon at {endpoint}: {error}") from error
 
-    client = await create_client(agent=card, client_config=ClientConfig(streaming=False))
-    try:
-        request = SendMessageRequest(message=new_text_message(text, role=Role.ROLE_USER))
-        harvest = _Harvest()
-        async for chunk in client.send_message(request):
-            harvest.take(chunk)
-    finally:
-        await client.close()
+        client = await create_client(
+            agent=card,
+            client_config=ClientConfig(streaming=False, httpx_client=httpx_client),
+        )
+        try:
+            request = SendMessageRequest(message=new_text_message(text, role=Role.ROLE_USER))
+            harvest = _Harvest()
+            async for chunk in client.send_message(request):
+                harvest.take(chunk)
+        finally:
+            await client.close()
     return DelegationResult(
         text=harvest.text(),
         state=harvest.state_name(),
