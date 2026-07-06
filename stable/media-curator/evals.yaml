@@ -1,0 +1,60 @@
+archon: media-curator
+schema: demiurge-evals/v1
+cases:
+- id: smoke-responds
+  origin: mint
+  description: Produces a non-empty, on-task response to a basic request.
+  input:
+    query: 'Briefly: what do you do, and what are the library conventions you enforce?'
+  expect: Describes the propose-only curation task and the fixed library conventions
+    (filename template, date priority, StashDB authority, one-performer-per-folder).
+- id: rename-basic
+  origin: mint
+  description: Canonical rename with authority and date-priority rules applied.
+  input:
+    query: 'Propose curation for this file. Current path: archive/bangpremium/2024-12-15/hot-tub-fun-4k.mp4.
+      Face match: local folder girls/alina_lopez (confidence 0.91). StashDB canonical
+      name for that identity: "Alina Lopez". StashDB scene publish date: 2024-12-10.
+      Classifier tags: acts=[posing, dancing], clothing=[bikini].'
+  expect: Proposes a filename following "alina lopez - 2024-12-10 - <title>.mp4"
+    (publish date beats the 2024-12-15 download-folder date), destination
+    girls/alina_lopez/, keeps the provided tags, and gives a rationale.
+  expect_contains:
+  - alina lopez - 2024-12-10
+  - alina_lopez
+- id: multi-performer
+  origin: mint
+  description: Multi-performer file follows the primary-folder rule with all names
+    in the filename.
+  input:
+    query: 'Propose curation for this file. Current path: archive/sitex/2025-03-02/collab-stream-part2.mp4.
+      Face matches: girls/aaliyah_love (dominant, confidence 0.88) and girls/alina_lopez
+      (confidence 0.79). StashDB canonical names: "Aaliyah Love", "Alina Lopez".
+      No publish date available. Classifier tags: acts=[talking, dancing].'
+  expect: Files it in the dominant performer's folder (girls/aaliyah_love/), includes
+    both performer names in the proposed filename, uses the download-folder date
+    2025-03-02 per date priority, and mentions keeping the path under the Windows
+    limit.
+  expect_contains:
+  - aaliyah_love
+  - alina lopez
+- id: flag-uncertain
+  origin: mint
+  description: Refuses to guess when identity evidence is missing.
+  input:
+    query: 'Propose curation for this file. Current path: downloads/VID_20250101_010203.mp4.
+      Face match: none (no faces detected). No StashDB fingerprint match. Classifier
+      tags: none. Container metadata: 1080p, 14 minutes.'
+  expect: Flags the file for manual review with a stated reason (no identity evidence)
+    rather than proposing a performer, folder, or invented name.
+- id: path-length-guard
+  origin: mint
+  description: Truncates per the Windows path-length rule instead of emitting an
+    over-long name.
+  input:
+    query: 'Propose curation for this file. Current path: archive/sitey/2025-05-20/the-absolutely-enormous-marathon-collaboration-super-stream-anniversary-special-extended-directors-cut-part-three-of-seven.mp4.
+      Face matches, in dominance order, with StashDB canonical names: "Aaliyah Love",
+      "Alina Lopez", "Rosa Star", "Mia Moon", "Ivy Quinn". Publish date 2025-05-18.'
+  expect: Applies the length guard — truncates the title and lists at most three
+    performers followed by "and others" — and the proposed filename stays safely
+    short while still starting with the primary performer and the 2025-05-18 date.

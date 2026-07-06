@@ -1,0 +1,72 @@
+{
+  "archon": "media-curator",
+  "endpoint": "http://127.0.0.1:9997",
+  "ran_at": "2026-07-06T22:13:49+00:00",
+  "passed": true,
+  "results": [
+    {
+      "case_id": "smoke-responds",
+      "origin": "mint",
+      "passed": true,
+      "checks": [
+        "ok completed with non-error text",
+        "ok claude judge (claude-opus-4-8): The response clearly describes the propose-only curation task and covers all key conventions: the filename template, date priority order, StashDB as name authority, and one-performer-per-folder destinations."
+      ],
+      "state": "TASK_STATE_COMPLETED",
+      "judged_by": "claude",
+      "response_text": "I'm Media Curator, a specialized Archon minted for a single narrow job:\n\n**What I do:** Given a media file's current filename/path, container metadata, face-match identities, and classifier tags, I *propose* (never execute) a canonical filename, a destination folder, and a tag set for that file — plus a rationale and confidence score. If I'm not confident, I flag the file for manual review instead of guessing. I don't rename, move, tag, or touch files myself — proposals only.\n\n**Library conventions I enforce:**\n1. **Filename template:** `<performer> - <YYYY-MM-DD> - <title>.<ext>` — performer name lowercase with spaces, safe characters only (alphanumeric, space, `-`, `_`, `(`, `)`).\n2. **Date priority:** scene publish date → download-folder date → file modification time.\n3. **Performer name authority:** StashDB canonical name wins; local library folder name is the fallback. ThePornDB is defunct and never cited as authority.\n4. **Destination:** one-performer-per-folder roots, folder name = lowercase snake_case of the performer (e.g. `girls/alina_lopez/`).\n5. **Multi-performer files:** filed under the primary (dominant-match) performer's folder, all performers listed in the filename — but path length is guarded: truncate title first, then cap at three performers + \"and others\" if still too long.\n6. **Tags:** drawn only from the house taxonomy (acts, toys, positions, angles, clothing, features), proposed only when supported by evidence provided in context.\n\nAnything outside proposing filename/tags/destination for provided file metadata is outside my charter."
+    },
+    {
+      "case_id": "rename-basic",
+      "origin": "mint",
+      "passed": true,
+      "checks": [
+        "ok completed with non-error text",
+        "ok response contains 'alina lopez - 2024-12-10'",
+        "ok response contains 'alina_lopez'",
+        "ok claude judge (claude-opus-4-8): The response proposes the filename 'alina lopez - 2024-12-10 - hot tub fun.mp4' using the publish date over the download date, destination girls/alina_lopez/, keeps the provided tags (posing, dancing, bikini), and gives a detailed rationale."
+      ],
+      "state": "TASK_STATE_COMPLETED",
+      "judged_by": "claude",
+      "response_text": "## Curation Proposal — `archive/bangpremium/2024-12-15/hot-tub-fun-4k.mp4`\n\n**Proposed filename:** `alina lopez - 2024-12-10 - hot tub fun.mp4`\n\n**Destination:** `girls/alina_lopez/`\n\n**Tags:** `posing`, `dancing`, `bikini`\n\n**Rationale:**\n- **Performer:** StashDB canonical name \"Alina Lopez\" takes authority over the local folder name per convention (4) → lowercased to `alina lopez`. Local folder `girls/alina_lopez` corroborates the identity (face-match 0.91), giving a single-performer destination folder in snake_case: `girls/alina_lopez/`.\n- **Date:** Scene publish date from StashDB (2024-12-10) outranks the download-folder date (2024-12-15) per date-priority rule (2).\n- **Title:** No authoritative scene title was supplied (StashDB gave only a publish date, not a title). Title is inferred from the existing filename slug `hot-tub-fun-4k`, stripping the `4k` resolution/quality marker (not part of a title) and converting hyphens to spaces → `hot tub fun`. This is a best-effort reconstruction, not a sourced title.\n- **Tags:** Taken directly from classifier output (`acts=[posing, dancing]`, `clothing=[bikini]`), no additions inferred beyond provided evidence.\n- Single performer, no multi-performer path-length concerns.\n\n**Confidence:** 0.80 (medium-high)\n\n**Flag for manual review:** Yes — the *title* segment specifically. Face-match/performer identity and date are solid, but \"hot tub fun\" is a guess from the filename slug rather than a confirmed scene title. Recommend confirming the actual scene title against source metadata (e.g., studio listing) before committing the rename; if confirmed, only the title portion would need updating."
+    },
+    {
+      "case_id": "multi-performer",
+      "origin": "mint",
+      "passed": true,
+      "checks": [
+        "ok completed with non-error text",
+        "ok response contains 'aaliyah_love'",
+        "ok response contains 'alina lopez'",
+        "ok claude judge (claude-opus-4-8): The response files the file in girls/aaliyah_love/ (dominant performer), includes both performer names in the filename, uses date 2025-03-02 from the download folder per date priority, and explicitly mentions the path is under the Windows limit."
+      ],
+      "state": "TASK_STATE_COMPLETED",
+      "judged_by": "claude",
+      "response_text": "## Curation Proposal — `archive/sitex/2025-03-02/collab-stream-part2.mp4`\n\n**proposed_filename:**\n`aaliyah love and alina lopez - 2025-03-02 - collab stream part 2.mp4`\n\n**destination:**\n`girls/aaliyah_love/`\n\n**tags:**\n`talking, dancing`\n\n**rationale:**\n- **Performers:** StashDB canonical names \"Aaliyah Love\" and \"Alina Lopez\" used (authoritative over any local folder name; ThePornDB not consulted, per policy). Aaliyah Love is the dominant face match (0.88) → primary folder. Both performers listed in the filename per the multi-performer rule.\n- **Date:** No scene publish date available. Falls back to the download-folder date embedded in the path (`2025-03-02`), per date-priority rule.\n- **Title:** Derived from the existing filename stem (`collab-stream-part2`), cleaned to safe characters and spaced out as \"collab stream part 2.\" No other title metadata was provided.\n- **Filename safety:** Comma-separated performer lists aren't in the safe-character set, so joined with \"and\" instead. Full path length is well under the Windows limit — no truncation or \"and others\" needed.\n- **Tags:** Limited strictly to classifier-provided acts (`talking`, `dancing`); no additional tags proposed since no other evidence (toys, positions, angles, clothing, features) was supplied.\n\n**confidence:** Medium — **flag for manual review**\n- Primary performer match (Aaliyah Love, 0.88) is solid.\n- Secondary performer match (Alina Lopez, 0.79) is below a comfortable confidence bar for a co-starring credit baked into the permanent filename. Recommend a human confirm Alina Lopez's presence before this file is renamed/moved — if she's not actually in the scene, the filename and destination folder assignment above would need revision."
+    },
+    {
+      "case_id": "flag-uncertain",
+      "origin": "mint",
+      "passed": true,
+      "checks": [
+        "ok completed with non-error text",
+        "ok claude judge (claude-opus-4-8): The response flags the file for manual review, explicitly declines to generate a filename/destination, and cites clear reasons (no face match, no fingerprint, no tags, ambiguous date) without inventing a performer or name."
+      ],
+      "state": "TASK_STATE_COMPLETED",
+      "judged_by": "claude",
+      "response_text": "**Proposal — 1 file, flagged for manual review**\n\n| Field | Value |\n|---|---|\n| **Source path** | `downloads/VID_20250101_010203.mp4` |\n| **proposed_filename** | *(cannot generate — see rationale)* |\n| **destination** | *(cannot generate — see rationale)* |\n| **tags** | `[]` — no classifier tags provided; no additions proposed (no evidence to cite) |\n| **confidence** | **Low — flagged for manual review** |\n\n**Rationale:**\n- **Performer identity unresolved.** No face match and no StashDB fingerprint match. Per naming-authority rules, StashDB canonical name wins, falling back to the local library folder name — but this file sits in `downloads/`, not a performer folder, so there is no fallback name either. The filename template requires `<performer>` and the destination requires a per-performer folder; neither can be populated without guessing, which is out of scope.\n- **Date is ambiguous, not authoritative.** The filename `VID_20250101_010203` looks like a device-generated timestamp (2025-01-01, 01:02:03), but that is not one of the defined priority sources (scene publish date → download-folder date → file modification time). No scene publish date, no dated download-folder, and no file modification time was supplied in the request. I'm not treating the embedded filename string as a substitute for these without confirmation.\n- **Tags: none available.** Classifier returned no tags, so no acts/toys/positions/angles/clothing/features can be proposed — adding any would be unsupported by evidence.\n- **Container metadata (1080p, 14 min)** doesn't help resolve identity or date, so it doesn't change the above.\n\n**Recommendation:** Route to manual review for performer ID (or run/confirm face-match and fingerprint match pipelines) and to obtain a real file modification timestamp or download-folder date before a canonical name/path can be proposed."
+    },
+    {
+      "case_id": "path-length-guard",
+      "origin": "mint",
+      "passed": true,
+      "checks": [
+        "ok completed with non-error text",
+        "ok claude judge (claude-opus-4-8): The response truncates the title, lists exactly three performers (Aaliyah Love, Alina Lopez, Rosa Star) followed by 'and others', and the resulting filename is short while starting with the primary performer and the 2025-05-18 date."
+      ],
+      "state": "TASK_STATE_COMPLETED",
+      "judged_by": "claude",
+      "response_text": "## Proposal — 1 file\n\n**Source:** `archive/sitey/2025-05-20/the-absolutely-enormous-marathon-collaboration-super-stream-anniversary-special-extended-directors-cut-part-three-of-seven.mp4`\n\n| Field | Value |\n|---|---|\n| **proposed_filename** | `aaliyah love and alina lopez and rosa star and others - 2025-05-18 - The Absolutely Enormous Marathon Collaboration (Part 3 of 7).mp4` |\n| **destination** | `girls/aaliyah_love/` |\n| **tags** | *(none proposed — see flag below)* |\n| **confidence** | 0.75 (filename/destination/date high-confidence; tags and title-truncation flagged for review) |\n\n### Rationale\n\n- **Date:** Scene publish date (2025-05-18) takes priority over the download-folder date (2025-05-20) per convention (2); used 2025-05-18.\n- **Performer authority:** All five face matches were supplied as StashDB canonical names, so each is authoritative as-given — lowercased with spaces for the filename, snake_case for folder naming. No ThePornDB data involved.\n- **Primary/destination:** \"Aaliyah Love\" is first in the dominance-ordered face-match list → primary performer → folder `girls/aaliyah_love/` per the one-performer-per-folder + primary-folder multi-performer rule (5).\n- **Performer list in filename:** Convention's safe-character set (alphanumeric, space, `-`, `_`, `(`, `)`) **excludes commas**, so performers are joined with `and` rather than comma-separated. All five performers plus the untruncated original title produced an estimated ~211-character filename; combined with a realistic library root path this risks exceeding the Windows ~260-char path limit, so per rule (5) I applied truncation in the specified order: title first (dropping marketing fluff — \"super stream anniversary special extended director's cut\" — while preserving the only concrete identifying fact, part 3 of 7; also stripped the apostrophe, which isn't a safe character), then capped performers at three (\"Aaliyah Love\", \"Alina Lopez\", \"Rosa Star\") + \"and others.\"\n- **Title cleanup:** Original slug title is promotional filler with no distinguishing content beyond the part number. Truncated to `The Absolutely Enormous Marathon Collaboration (Part 3 of 7)` to retain series/part identity.\n\n### Flags for manual review\n\n1. **No classifier tags were provided in this request.** Per charter, tags may only be proposed from evidence in the provided context — none is available here, so no tags are proposed. Please supply classifier output to complete tagging.\n2. **Title truncation is a judgment call** — dropping \"super stream anniversary special extended director's cut\" assumes that language is non-identifying marketing copy. Please confirm no scene-distinguishing detail (e.g., a sub-event name distinct from other parts in this 7-part series) was lost.\n3. **Series consistency:** this is \"Part Three of Seven\" — recommend curating all seven parts together so filenames/performer-truncation choices stay consistent across the series (not assessed here since only this file was provided)."
+    }
+  ]
+}

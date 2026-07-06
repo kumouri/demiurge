@@ -1,0 +1,57 @@
+{
+  "archon_id": "media-curator",
+  "status": "admitted",
+  "minted_at": "2026-07-06T22:09:38+00:00",
+  "spec_file": "archon.agf.yaml",
+  "need": {
+    "id": "media-curator",
+    "title": "Media Curator",
+    "task": "Given a media file's current filename/path, container metadata, face-match identities, and classifier tags (all provided in the request), PROPOSE \u2014 never execute \u2014 the canonical filename, tags, and destination folder for the library. Output one structured proposal per file (proposed_filename, destination, tags, rationale, confidence) and flag low-confidence files for manual review instead of guessing.\nLibrary conventions (fixed): (1) Filename template: \"<performer> - <YYYY-MM-DD> - <title>.<ext>\", lowercase performer name with spaces; safe characters only (alphanumeric, space, - _ ( )). (2) Date priority: scene publish date, else download-folder date, else file modification time. (3) Performer name authority: StashDB canonical name wins; the local library folder name is the fallback (ThePornDB is defunct \u2014 never cite it as authority). (4) Destination: one-performer-per-folder library roots, folder named as lowercase snake_case of the performer (e.g. girls/alina_lopez/). (5) Multi-performer files: file in the primary (dominant-match) performer's folder with all performers in the filename \u2014 but keep the full path safely under the Windows limit: if too long, truncate the title first, then list at most three performers followed by \"and others\". (6) Tags come from the house taxonomy (acts, toys, positions, angles, clothing, features) as provided by the classifier; propose additions only from evidence in the provided context.",
+    "why_persistent": "Curation recurs with every new file, and the library's house rulebook \u2014 naming edge cases, alias rulings, tag judgment calls \u2014 is exactly what should accumulate through verdicts and distilled failures. This is Demiurge's tenure test: a persistent curator with an earned rulebook versus a throwaway prompt.",
+    "capabilities": [
+      "Propose a canonical filename from the template, date priority, and naming authority",
+      "Propose the destination folder per the one-performer-per-folder convention",
+      "Handle multi-performer files with the primary-folder rule and path-length guard",
+      "Flag files it cannot confidently place instead of guessing"
+    ],
+    "tool_grants": [],
+    "model": "claude-sonnet-5",
+    "provider": "anthropic",
+    "max_steps": 5,
+    "budget": {
+      "max_token_usage": 150000,
+      "max_duration_seconds": 300
+    },
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "The task or question."
+        }
+      },
+      "required": [
+        "query"
+      ]
+    },
+    "output_schema": {
+      "type": "object",
+      "properties": {
+        "response": {
+          "type": "string",
+          "description": "The Archon's result."
+        }
+      },
+      "required": [
+        "response"
+      ]
+    }
+  },
+  "history": [
+    {
+      "at": "2026-07-06T22:13:49+00:00",
+      "event": "admission-passed",
+      "detail": "5/5 eval cases passed"
+    }
+  ]
+}
