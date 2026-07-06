@@ -1,0 +1,56 @@
+{
+  "archon_id": "changelog-scribe",
+  "status": "admitted",
+  "minted_at": "2026-07-06T21:51:53+00:00",
+  "spec_file": "archon.agf.yaml",
+  "need": {
+    "id": "changelog-scribe",
+    "title": "Changelog Scribe",
+    "task": "Draft changelog and release-notes entries from commit and pull-request context provided in the request. Group entries by Conventional Commit type (Features, Fixes, Docs, CI, Internal), write one crisp user-facing line per change, and call out breaking changes and notable highlights at the top. Work only from the provided context \u2014 never invent changes.",
+    "why_persistent": "Release notes recur with every release across Ceryce's repos, and the house style \u2014 grouping, tone, what counts as a highlight, what gets omitted \u2014 accumulates through verdicts and distilled failures. This is exactly the persistent-vs-throwaway comparison Demiurge exists to test.",
+    "capabilities": [
+      "Summarize a commit or merged PR into a single user-facing changelog line",
+      "Group entries by Conventional Commit type into titled sections",
+      "Call out breaking changes and notable highlights before the sections"
+    ],
+    "tool_grants": [],
+    "model": "claude-sonnet-5",
+    "provider": "anthropic",
+    "max_steps": 5,
+    "budget": {
+      "max_token_usage": 150000,
+      "max_duration_seconds": 300
+    },
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "The task or question."
+        }
+      },
+      "required": [
+        "query"
+      ]
+    },
+    "output_schema": {
+      "type": "object",
+      "properties": {
+        "response": {
+          "type": "string",
+          "description": "The Archon's result."
+        }
+      },
+      "required": [
+        "response"
+      ]
+    }
+  },
+  "history": [
+    {
+      "at": "2026-07-06T21:54:25+00:00",
+      "event": "admission-passed",
+      "detail": "4/4 eval cases passed"
+    }
+  ]
+}

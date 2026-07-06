@@ -1,0 +1,56 @@
+{
+  "archon": "changelog-scribe",
+  "endpoint": "http://127.0.0.1:9998",
+  "ran_at": "2026-07-06T21:54:25+00:00",
+  "passed": true,
+  "results": [
+    {
+      "case_id": "smoke-responds",
+      "origin": "mint",
+      "passed": true,
+      "checks": [
+        "ok completed with non-error text",
+        "ok claude judge (claude-opus-4-8): The response is non-empty and accurately describes the charter's task: drafting changelogs grouped by Conventional Commit type, one-line user-facing summaries, flagging breaking changes/highlights, and only working from provided context."
+      ],
+      "state": "TASK_STATE_COMPLETED",
+      "judged_by": "claude",
+      "response_text": "I'm Changelog Scribe. My job: turn the commit/PR context you give me into a changelog, grouped by Conventional Commit type — Features, Fixes, Docs, CI, Internal — with a one-line, user-facing summary per entry, and any breaking changes or notable highlights flagged at the top.\n\nI only work from what's actually supplied — I don't invent or infer changes from the repo itself. Go ahead and paste the commit list, PR titles/descriptions, or diff summaries you'd like turned into changelog entries."
+    },
+    {
+      "case_id": "capability-1",
+      "origin": "mint",
+      "passed": true,
+      "checks": [
+        "ok completed with non-error text",
+        "ok claude judge (claude-opus-4-8): The response demonstrates the capability by taking representative commits and producing concise user-facing changelog lines summarizing each, clearly showing the input-to-changelog transformation."
+      ],
+      "state": "TASK_STATE_COMPLETED",
+      "judged_by": "claude",
+      "response_text": "Since no commit/PR context was provided in this request, I'll construct a small **representative input** (a handful of commits, styled like real entries from this repo's Conventional Commits convention) and then perform the actual task — summarizing that context into a changelog — so you can see the input/output boundary clearly. Nothing below claims to be Demiurge's real history.\n\n## Example input (commit log provided as context)\n\n```\na1b2c3d feat(adapters): pass ANTHROPIC_API_KEY_DEMIURGE through as ANTHROPIC_API_KEY on deploy\nb4c5d6e feat(curate)!: require expect enforcement in ClaudeJudge, fail closed on judge errors\nc7d8e9f fix(mint): correct minor version bump in revise() when tenure heuristics fail\nd0e1f2a docs(adr): add ADR 0005 for claude-sdk reference adapter\ne3f4a5b ci: run ruff check and format --check on Python 3.12-3.14 matrix\nf6a7b8c chore(delegate): switch ledger writes to append-only jsonl\n```\n\n## Changelog output (produced from the above)\n\n### ⚠ Breaking Changes\n- **Curation:** `ClaudeJudge` now enforces natural-language `expect` clauses and fails closed on any judge error — Archons that previously passed on advisory-only `expect` checks may now fail admission until their evals are tightened.\n\n### Highlights\n- Deploys now securely thread a dedicated API key (`ANTHROPIC_API_KEY_DEMIURGE`) into each Archon's runtime, removing a manual credential-wiring step.\n\n### Features\n- Runtime deploys pass `ANTHROPIC_API_KEY_DEMIURGE` through to the Archon as `ANTHROPIC_API_KEY`, so scaffolded agents authenticate out of the box.\n- `ClaudeJudge` now enforces `expect` clauses via structured-output verdicts and fails closed on judge errors, tightening admission-gate reliability.\n\n### Fixes\n- Fixed an incorrect minor-version bump during `revise()` when tenure heuristics failed to resolve, ensuring Archons are versioned correctly on re-mint.\n\n### Docs\n- Added ADR 0005 documenting the `claude-sdk` reference adapter decision.\n\n### CI\n- Test and lint checks (`pytest`, `ruff check`, `ruff format --check`) now run across the Python 3.12–3.14 matrix on every push and PR.\n\n### Internal\n- Archon task ledgers now use append-only JSONL writes for `stable/<id>/ledger.jsonl`, improving delegation history integrity.\n\n---\n\nTo run this for real, hand me an actual commit list or merged-PR set (`git log`, a PR diff, or GitHub PR titles/bodies) and I'll produce the changelog from that instead of the illustrative example above."
+    },
+    {
+      "case_id": "capability-2",
+      "origin": "mint",
+      "passed": true,
+      "checks": [
+        "ok completed with non-error text",
+        "ok claude judge (claude-opus-4-8): The response groups commit entries into titled sections by Conventional Commit type (Features, Fixes, Docs, CI, Internal, plus Breaking Changes), clearly demonstrating the capability on a representative example."
+      ],
+      "state": "TASK_STATE_COMPLETED",
+      "judged_by": "claude",
+      "response_text": "That command needs manual approval and isn't essential — for a demonstration, I'll use a representative (illustrative) batch of commit/PR context rather than wait on repo access. Here's the demo:\n\n---\n\n**Input context (representative example — commit log / merged PRs provided to me):**\n\n```\nfeat(curate): add ClaudeJudge with structured-output verdicts for admit --judge claude\nfeat(mint): support minor version bump on revise, retaining failure-derived eval cases\nfix(delegate): correct ledger append race when two tasks complete concurrently\nfix(spec): reject Agent Format specs missing required charter field instead of silently defaulting\ndocs(adr): add ADR 0005 documenting claude-sdk as the reference runtime adapter\ndocs(readme): clarify fused loop diagram (mint -> delegate -> curate -> distill)\nci: run ruff check and ruff format --check as separate required jobs\nci: add Python 3.14 to the test matrix\nchore(deps): bump a2a-sdk to 0.4.2\nrefactor(cli): extract shared judge-selection flag parsing into demiurge.cli._judge\nBREAKING CHANGE: `demiurge tenure` now requires --archon-id explicitly; the implicit \"last minted\" default has been removed\n```\n\n---\n\n## Changelog\n\n**Highlights**\n- New `ClaudeJudge` brings LLM-graded, structured-output admission verdicts to the fused loop.\n\n**⚠ Breaking Changes**\n- `demiurge tenure` now requires `--archon-id` explicitly — the implicit \"last minted\" default has been removed. Update any scripts/CI calling `tenure` without the flag.\n\n### Features\n- Added `ClaudeJudge` (`demiurge admit --judge claude`), enforcing `expect` clauses via the Claude API with structured-output verdicts.\n- `revise` now bumps the Archon's minor version and retains every failure-derived eval case across the re-mint.\n\n### Fixes\n- Fixed a race in the per-Archon task ledger where two concurrently completing tasks could clobber each other's append.\n- Agent Format specs missing a required `charter` field are now rejected at validation instead of silently defaulting.\n\n### Docs\n- Added ADR 0005 documenting the `claude-sdk` adapter as the reference runtime implementation.\n- Clarified the fused-loop diagram in the README (mint → delegate → curate → distill).\n\n### CI\n- Split `ruff check` and `ruff format --check` into separate required jobs for clearer failure signal.\n- Added Python 3.14 to the CI test matrix.\n\n### Internal\n- Bumped `a2a-sdk` to 0.4.2.\n- Refactored CLI judge-selection flag parsing into a shared `demiurge.cli._judge` helper (no behavior change).\n\n---\n\nThat's the pattern: breaking changes and highlights called out up top, everything else bucketed under its Conventional Commit type as a titled section. Give me real commit/PR context (a `git log`, PR list, etc.) and I'll produce the actual changelog the same way — I won't fabricate entries for a real release."
+    },
+    {
+      "case_id": "capability-3",
+      "origin": "mint",
+      "passed": true,
+      "checks": [
+        "ok completed with non-error text",
+        "ok claude judge (claude-opus-4-8): The response demonstrates the capability by producing a changelog that surfaces breaking changes and highlights sections before the categorized sections, exactly as expected."
+      ],
+      "state": "TASK_STATE_COMPLETED",
+      "judged_by": "claude",
+      "response_text": "Since no actual commit/PR context was supplied, I can't pull real changes to summarize — my charter forbids inventing changes to an actual release. What I *can* do is demonstrate the capability end-to-end using a clearly-labeled synthetic input, so you can see exactly how I'd structure real output.\n\n---\n\n### Example input (hypothetical commits/PRs, for demo purposes only)\n\n```\nfeat(auth)!: replace session cookies with signed JWT tokens (#412)\n  BREAKING CHANGE: existing sessions are invalidated on deploy; clients must\n  re-authenticate. Removes `SESSION_SECRET` env var in favor of `JWT_SIGNING_KEY`.\n\nfeat(export): add CSV export for report dashboard (#420)\n\nfix(billing): correct proration calculation for mid-cycle plan upgrades (#423)\n\nfix(ui): prevent double-submit on the checkout form (#425)\n\ndocs(api): document rate-limit headers on all public endpoints (#418)\n\nci: cache node_modules between workflow runs to cut CI time ~40% (#427)\n\nchore(deps): bump lodash to 4.17.21 for security advisory GHSA-xxxx (#429)\n\nrefactor(core): extract retry logic into shared utility (#430)\n```\n\n---\n\n### Changelog output produced from that input\n\n## v2.4.0\n\n**⚠️ Breaking changes**\n- Session cookies have been replaced with signed JWT tokens. All existing sessions are invalidated on deploy — users must log in again. The `SESSION_SECRET` environment variable is removed; set `JWT_SIGNING_KEY` instead. (#412)\n\n**✨ Highlights**\n- New CSV export for the report dashboard. (#420)\n- CI runs are ~40% faster thanks to dependency caching. (#427)\n\n### Features\n- Add CSV export for the report dashboard. (#420)\n\n### Fixes\n- Fix incorrect proration calculation for mid-cycle plan upgrades. (#423)\n- Prevent duplicate charges by blocking double-submit on the checkout form. (#425)\n\n### Docs\n- Document rate-limit headers across all public API endpoints. (#418)\n\n### CI\n- Cache `node_modules` between workflow runs, cutting CI time by ~40%. (#427)\n\n### Internal\n- Bump lodash to 4.17.21 to address security advisory GHSA-xxxx. (#429)\n- Extract retry logic into a shared utility (no user-facing change). (#430)\n\n---\n\nThat's the shape: breaking changes and highlights surfaced first, everything else grouped by Conventional Commit type below. Send me real commit/PR context (log output, PR titles/descriptions, diffs) whenever you want an actual changelog drafted."
+    }
+  ]
+}
