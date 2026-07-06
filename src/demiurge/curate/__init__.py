@@ -12,11 +12,14 @@ from demiurge.curate.evals import (
     run_evals,
     save_evals,
 )
+from demiurge.curate.judge_llm import ClaudeJudge, JudgeVerdict
 from demiurge.curate.outcomes import TenureReport, record_verdict, retire, tenure_review
 from demiurge.curate.record import load_record, set_status
 
 __all__ = [
     "BaselineJudge",
+    "ClaudeJudge",
+    "JudgeVerdict",
     "CaseResult",
     "EvalCase",
     "EvalReport",
