@@ -1,10 +1,12 @@
 """Runtime adapters: a validated spec in, a running A2A-addressable Archon out (ADR 0003)."""
 
 from demiurge.adapters.base import DeployError, Deployment, RuntimeAdapter, ScaffoldResult
+from demiurge.adapters.claude_cli import ClaudeCliAdapter
 from demiurge.adapters.claude_sdk import ClaudeAgentSdkAdapter
 
 _ADAPTERS: dict[str, type] = {
     ClaudeAgentSdkAdapter.name: ClaudeAgentSdkAdapter,
+    ClaudeCliAdapter.name: ClaudeCliAdapter,
 }
 
 
@@ -19,6 +21,7 @@ def get_adapter(name: str) -> RuntimeAdapter:
 
 __all__ = [
     "ClaudeAgentSdkAdapter",
+    "ClaudeCliAdapter",
     "DeployError",
     "Deployment",
     "RuntimeAdapter",
