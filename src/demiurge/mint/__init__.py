@@ -1,6 +1,6 @@
 """The mint pipeline: a justified need in, a specced Archon out."""
 
-from demiurge.mint.need import NeedStatement, ToolGrant, load_need
+from demiurge.mint.need import LocalToolGrant, NeedStatement, ToolGrant, load_need
 from demiurge.mint.pipeline import (
     MintError,
     MintResult,
@@ -11,6 +11,7 @@ from demiurge.mint.pipeline import (
 )
 
 __all__ = [
+    "LocalToolGrant",
     "MintError",
     "MintResult",
     "NeedStatement",
