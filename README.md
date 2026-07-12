@@ -45,6 +45,19 @@ It rides those rails and owns exactly one thing: the judgment layer above them �
 The bootstrap demo: Demiurge's first mint is **Archon Zero — an agent that helps build
 Demiurge**. Minted, eval-gated, delegated to, and curated by the very loop it contributes to.
 
+## Runtimes
+
+Archons run on existing runtimes through thin adapters (ADR 0003). Two ship today — the same
+minted spec runs on either:
+
+- **`claude-sdk`** (default; ADR 0005) — the Claude Agent SDK behind an a2a-sdk server.
+  API-billed (`ANTHROPIC_API_KEY`, scoped via `ANTHROPIC_API_KEY_DEMIURGE`).
+- **`claude-cli`** (ADR 0006; `--adapter claude-cli`) — the Claude Code CLI as a subprocess
+  behind the same a2a-sdk server. **Subscription-billed**: the operator's `claude` login or a
+  `claude setup-token` OAuth token; `ANTHROPIC_API_KEY` is deliberately scrubbed so nothing
+  silently switches to metered API spend. Built for local-first operators (this is how Margo,
+  a chief-of-staff assistant, mints her specialized staff).
+
 ## Status
 
 Planning — see [PLAN.md](PLAN.md) for the refined goal, v1 definition of done, and the
