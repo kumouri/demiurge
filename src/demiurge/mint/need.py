@@ -42,6 +42,22 @@ class ToolGrant(BaseModel):
     approval: bool = False
 
 
+class LocalToolGrant(BaseModel):
+    """A runtime-builtin tool the Archon may use (Agent Format ``local_tools``).
+
+    ``name`` is the runtime's identifier for the tool — on the claude-cli
+    runtime, a Claude Code tool name or specifier (e.g. ``Bash``,
+    ``WebSearch``, ``Bash(python *)``). Defaults to the alias.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    alias: str = Field(pattern=r"^[a-zA-Z_][a-zA-Z0-9_]*$")
+    name: str | None = None
+    description: str | None = None
+    approval: bool = False
+
+
 class NeedStatement(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -53,6 +69,7 @@ class NeedStatement(BaseModel):
     )
     capabilities: list[str] = Field(min_length=1)
     tool_grants: list[ToolGrant] = Field(default_factory=list)
+    local_tools: list[LocalToolGrant] = Field(default_factory=list)
     model: str = DEFAULT_MODEL
     provider: str = DEFAULT_PROVIDER
     max_steps: int = Field(default=10, ge=1)

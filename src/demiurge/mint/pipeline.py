@@ -27,6 +27,7 @@ from demiurge.spec.model import (
     ArchonSpec,
     Constraints,
     Interface,
+    LocalTool,
     McpServer,
     Metadata,
     react_policy,
@@ -70,8 +71,18 @@ def build_spec(need: NeedStatement, *, version: str = "0.1.0") -> ArchonSpec:
     """Assemble the Agent Format document for a need (pure; no I/O)."""
     instructions = _compose_instructions(need)
     action_space = None
-    if need.tool_grants:
+    if need.tool_grants or need.local_tools:
         action_space = ActionSpace(
+            local_tools=[
+                LocalTool(
+                    alias=grant.alias,
+                    name=grant.name,
+                    description=grant.description,
+                    approval=grant.approval or None,
+                )
+                for grant in need.local_tools
+            ]
+            or None,
             mcp_servers=[
                 McpServer(
                     alias=grant.alias,
@@ -82,6 +93,7 @@ def build_spec(need: NeedStatement, *, version: str = "0.1.0") -> ArchonSpec:
                 )
                 for grant in need.tool_grants
             ]
+            or None,
         )
     return ArchonSpec(
         metadata=Metadata(
@@ -106,15 +118,17 @@ def build_spec(need: NeedStatement, *, version: str = "0.1.0") -> ArchonSpec:
 def build_charter(need: NeedStatement) -> str:
     """Render the Archon's charter — fixed at mint time, the scope authority."""
     capabilities = "\n".join(f"- {capability}" for capability in need.capabilities)
-    tools = (
-        "\n".join(
-            f"- `{grant.alias}`"
-            + (f" — {grant.description}" if grant.description else "")
-            + (f" (tools: {', '.join(grant.allowed_tools)})" if grant.allowed_tools else "")
-            for grant in need.tool_grants
-        )
-        or "- none — this Archon works from its instructions alone"
-    )
+    tool_lines = [
+        f"- `{grant.alias}` — built-in runtime tool `{grant.name or grant.alias}`"
+        + (f" — {grant.description}" if grant.description else "")
+        for grant in need.local_tools
+    ] + [
+        f"- `{grant.alias}`"
+        + (f" — {grant.description}" if grant.description else "")
+        + (f" (tools: {', '.join(grant.allowed_tools)})" if grant.allowed_tools else "")
+        for grant in need.tool_grants
+    ]
+    tools = "\n".join(tool_lines) or "- none — this Archon works from its instructions alone"
     return f"""# Charter — {need.title} (`{need.id}`)
 
 *Fixed at mint time. This charter, not the conversation that produced it, is the scope
