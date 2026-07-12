@@ -19,12 +19,18 @@ Python ≥ 3.12, managed with **uv** (`src/` layout, hatchling build backend). C
 `demiurge.spec` (typed Agent Format models + YAML emission + validation against the **vendored**
 schema in `src/demiurge/spec/schemas/` — re-vendor deliberately, never hand-edit), `demiurge.mint`
 (need statement → spec + charter + evals seed + lifecycle record under `stable/<id>/`),
-`demiurge.adapters` (runtime adapter contract + the `claude-sdk` reference adapter, ADR 0005 —
-scaffolds a standalone uv project with a generic `server.py` serving the spec over A2A; the spec's
-MCP `server_ref` grants map onto `ClaudeAgentOptions.mcp_servers` via a runtime-owner
-`mcp-servers.json` (seeded as `mcp-servers.example.json`); deploy passes a set
-`ANTHROPIC_API_KEY_DEMIURGE` through to the Archon as `ANTHROPIC_API_KEY`; templates live under
-`adapters/templates/`), `demiurge.delegate` (A2A client + the append-only per-Archon
+`demiurge.adapters` (runtime adapter contract + two adapters, both scaffolding a standalone uv
+project with a generic `server.py` serving the spec over A2A, templates under
+`adapters/templates/`: the `claude-sdk` reference adapter, ADR 0005 — the spec's MCP `server_ref`
+grants map onto `ClaudeAgentOptions.mcp_servers` via a runtime-owner `mcp-servers.json` (seeded as
+`mcp-servers.example.json`); deploy passes a set `ANTHROPIC_API_KEY_DEMIURGE` through to the Archon
+as `ANTHROPIC_API_KEY` — and the `claude-cli` adapter, ADR 0006 (`--adapter claude-cli`) — the
+executor shells out to the Claude Code CLI (`claude -p`), **subscription-billed**: deploy and every
+invocation scrub `ANTHROPIC_API_KEY` (auth = `claude` login or `CLAUDE_CODE_OAUTH_TOKEN`); same
+`mcp-servers.json` contract rendered to `--mcp-config` + `--strict-mcp-config`; spec
+`action_space.local_tools` map onto CLI built-in tools via `--allowedTools` (need statements may
+declare them via `local_tools`); `max_steps` is advisory, the duration budget is the hard
+timeout), `demiurge.delegate` (A2A client + the append-only per-Archon
 task ledger `stable/<id>/ledger.jsonl` that curation reads), `demiurge.curate` (the fused loop:
 eval runner + admission gate with a pluggable judge — `BaselineJudge` is deterministic and treats
 natural-language `expect` as advisory; `ClaudeJudge` (`demiurge admit --judge claude`) also
