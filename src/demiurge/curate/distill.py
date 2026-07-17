@@ -35,13 +35,14 @@ def distill_failure(
     note: str,
     *,
     expect_contains: list[str] | None = None,
+    ledger_dir: Path | str | None = None,
 ) -> EvalCase:
     """Turn a failed delegation into a regression eval case the successor must pass."""
     archon_dir = Path(archon_dir)
     delegation = next(
         (
             entry
-            for entry in read_ledger(archon_dir)
+            for entry in read_ledger(archon_dir, ledger_dir)
             if is_delegation(entry) and entry.get("task_id") == task_id
         ),
         None,

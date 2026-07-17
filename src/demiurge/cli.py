@@ -143,6 +143,21 @@ def main(argv: list[str] | None = None) -> int:
     tenure_parser.add_argument("--stable-dir", type=Path, default=Path("stable"))
     tenure_parser.add_argument("--window", type=int, default=20)
 
+    # The ledger is the only part of the stable that churns — it appends on every delegation and
+    # carries the full request/response text. Operators who track their stable in git need it
+    # somewhere else: a permanently-dirty file can block a `pull --ff-only`, and the delegation text
+    # ends up in history forever. Every command that touches the ledger accepts this; omitting it
+    # keeps the ledger beside the stable data exactly as before.
+    for subparser in (delegate_parser, verdict_parser, distill_parser, tenure_parser):
+        subparser.add_argument(
+            "--ledger-dir",
+            type=Path,
+            default=None,
+            help="directory holding this Archon's ledger.jsonl (default: its stable dir). Point "
+                 "this at the Archon's runtime-state directory to keep append-per-delegation "
+                 "churn — and the request/response text it records — out of a tracked stable.",
+        )
+
     retire_parser = subparsers.add_parser("retire", help="end an Archon's tenure")
     retire_parser.add_argument("archon_id")
     retire_parser.add_argument("--reason", required=True)
@@ -233,7 +248,7 @@ def _cmd_delegate(args: argparse.Namespace) -> int:
     except DelegationError as error:
         print(f"demiurge: {error}", file=sys.stderr)
         return 1
-    record_delegation(archon_dir, args.text, result)
+    record_delegation(archon_dir, args.text, result, ledger_dir=args.ledger_dir)
     print(f"state: {result.state} ({result.duration_seconds}s)")
     print(result.text)
     return 0
@@ -290,7 +305,9 @@ def _cmd_curate(args: argparse.Namespace) -> int:
 
     if args.command == "verdict":
         try:
-            entry = record_verdict(archon_dir, args.task_id, args.outcome, args.note)
+            entry = record_verdict(
+                archon_dir, args.task_id, args.outcome, args.note, ledger_dir=args.ledger_dir
+            )
         except ValueError as error:
             print(f"demiurge: {error}", file=sys.stderr)
             return 2
@@ -300,7 +317,11 @@ def _cmd_curate(args: argparse.Namespace) -> int:
     if args.command == "distill":
         try:
             case = distill_failure(
-                archon_dir, args.task_id, args.note, expect_contains=args.expect_contains
+                archon_dir,
+                args.task_id,
+                args.note,
+                expect_contains=args.expect_contains,
+                ledger_dir=args.ledger_dir,
             )
         except ValueError as error:
             print(f"demiurge: {error}", file=sys.stderr)
@@ -309,7 +330,7 @@ def _cmd_curate(args: argparse.Namespace) -> int:
         return 0
 
     if args.command == "tenure":
-        report = tenure_review(archon_dir, window=args.window)
+        report = tenure_review(archon_dir, window=args.window, ledger_dir=args.ledger_dir)
         print(f"archon '{report.archon_id}': {report.recommendation.upper()}")
         for reason in report.reasons:
             print(f"  - {reason}")

@@ -15,7 +15,7 @@ from demiurge.curate import (
     tenure_review,
 )
 from demiurge.delegate import delegate, record_delegation
-from demiurge.delegate.ledger import LEDGER_FILENAME
+from demiurge.delegate.ledger import LEDGER_FILENAME, ledger_path
 from demiurge.mint import NeedStatement, mint
 
 
@@ -31,7 +31,8 @@ def _need(**overrides) -> NeedStatement:
     return NeedStatement.model_validate(fields)
 
 
-def _fake_delegation(archon_dir, task_id: str, state: str = "TASK_STATE_COMPLETED", response="ok"):
+def _fake_delegation(archon_dir, task_id: str, state: str = "TASK_STATE_COMPLETED", response="ok",
+                     ledger_dir=None):
     entry = {
         "delegated_at": "2026-07-06T00:00:00+00:00",
         "request": f"request for {task_id}",
@@ -40,7 +41,9 @@ def _fake_delegation(archon_dir, task_id: str, state: str = "TASK_STATE_COMPLETE
         "task_id": task_id,
         "duration_seconds": 0.1,
     }
-    with (archon_dir / LEDGER_FILENAME).open("a", encoding="utf-8") as ledger:
+    path = ledger_path(archon_dir, ledger_dir)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as ledger:
         ledger.write(json.dumps(entry) + "\n")
     return entry
 
@@ -187,3 +190,37 @@ def test_run_evals_writes_a_report(tmp_path, echo_endpoint):
     on_disk = json.loads((minted.archon_dir / "eval-report.json").read_text(encoding="utf-8"))
     assert on_disk["passed"] == report.passed
     assert len(on_disk["results"]) == len(report.results)
+
+
+# --- ledger_dir: the curate side must agree with the delegate side ------------------------------
+
+
+def test_verdict_and_tenure_follow_the_ledger_dir(tmp_path):
+    """A verdict must find the delegation it judges. If `delegate --ledger-dir` writes one place and
+    `verdict` reads another, the chain breaks silently — the verdict raises 'no delegation with
+    task_id' against a ledger that plainly has it."""
+    minted = mint(_need(id="ledger-dir-archon"), tmp_path)
+    state_dir = tmp_path / "runtime-state"
+    _fake_delegation(minted.archon_dir, "task-1", ledger_dir=state_dir)
+
+    # Reading the default location must NOT see it...
+    with pytest.raises(ValueError, match="no delegation with task_id"):
+        record_verdict(minted.archon_dir, "task-1", "success")
+
+    # ...and reading through the override must.
+    entry = record_verdict(minted.archon_dir, "task-1", "success", ledger_dir=state_dir)
+    assert entry["outcome"] == "success"
+    assert not (minted.archon_dir / LEDGER_FILENAME).exists()  # stable stays clean
+
+    report = tenure_review(minted.archon_dir, ledger_dir=state_dir)
+    assert report.archon_id == "ledger-dir-archon"   # identity still comes from archon_dir
+    assert report.delegations == 1
+    assert report.failures == 0
+
+
+def test_distill_follows_the_ledger_dir(tmp_path):
+    minted = mint(_need(id="distill-dir-archon"), tmp_path)
+    state_dir = tmp_path / "runtime-state"
+    _fake_delegation(minted.archon_dir, "task-2", state="TASK_STATE_FAILED", ledger_dir=state_dir)
+    case = distill_failure(minted.archon_dir, "task-2", "broke", ledger_dir=state_dir)
+    assert case.id

@@ -31,7 +31,10 @@ invocation scrub `ANTHROPIC_API_KEY` (auth = `claude` login or `CLAUDE_CODE_OAUT
 `action_space.local_tools` map onto CLI built-in tools via `--allowedTools` (need statements may
 declare them via `local_tools`); `max_steps` is advisory, the duration budget is the hard
 timeout), `demiurge.delegate` (A2A client + the append-only per-Archon
-task ledger `stable/<id>/ledger.jsonl` that curation reads), `demiurge.curate` (the fused loop:
+task ledger `stable/<id>/ledger.jsonl` that curation reads — the one part of the stable that
+*churns*, so `--ledger-dir` relocates it for operators tracking their stable in git; it appends on
+every delegation and stores the full request/response text, which otherwise means a permanently
+dirty tree and that text in history forever), `demiurge.curate` (the fused loop:
 eval runner + admission gate with a pluggable judge — `BaselineJudge` is deterministic and treats
 natural-language `expect` as advisory; `ClaudeJudge` (`demiurge admit --judge claude`) also
 enforces `expect` via the Claude API with structured-output verdicts, failing closed on judge
