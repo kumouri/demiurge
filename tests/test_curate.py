@@ -31,8 +31,9 @@ def _need(**overrides) -> NeedStatement:
     return NeedStatement.model_validate(fields)
 
 
-def _fake_delegation(archon_dir, task_id: str, state: str = "TASK_STATE_COMPLETED", response="ok",
-                     ledger_dir=None):
+def _fake_delegation(
+    archon_dir, task_id: str, state: str = "TASK_STATE_COMPLETED", response="ok", ledger_dir=None
+):
     entry = {
         "delegated_at": "2026-07-06T00:00:00+00:00",
         "request": f"request for {task_id}",
@@ -213,7 +214,7 @@ def test_verdict_and_tenure_follow_the_ledger_dir(tmp_path):
     assert not (minted.archon_dir / LEDGER_FILENAME).exists()  # stable stays clean
 
     report = tenure_review(minted.archon_dir, ledger_dir=state_dir)
-    assert report.archon_id == "ledger-dir-archon"   # identity still comes from archon_dir
+    assert report.archon_id == "ledger-dir-archon"  # identity still comes from archon_dir
     assert report.delegations == 1
     assert report.failures == 0
 

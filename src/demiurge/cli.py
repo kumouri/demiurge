@@ -154,8 +154,8 @@ def main(argv: list[str] | None = None) -> int:
             type=Path,
             default=None,
             help="directory holding this Archon's ledger.jsonl (default: its stable dir). Point "
-                 "this at the Archon's runtime-state directory to keep append-per-delegation "
-                 "churn — and the request/response text it records — out of a tracked stable.",
+            "this at the Archon's runtime-state directory to keep append-per-delegation "
+            "churn — and the request/response text it records — out of a tracked stable.",
         )
 
     retire_parser = subparsers.add_parser("retire", help="end an Archon's tenure")
