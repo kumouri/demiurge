@@ -6,6 +6,21 @@ All notable changes to Demiurge are documented here. The format follows
 > Entries are drafted by the **Changelog Scribe**, an Archon minted and
 > curated by Demiurge itself, and reviewed before landing.
 
+## [Unreleased]
+
+### Features
+
+- **`--ledger-dir`: decouple where an Archon's ledger lives from which Archon it is.** The ledger is
+  the only part of the stable that churns — spec, charter, evals and record are written once at
+  mint/revise time, while the ledger appends on every delegation and stores the full request and
+  response text. Operators tracking their stable in git therefore hit two problems the rest of the
+  stable never causes: a permanently-dirty working tree (which can abort a `pull --ff-only` and, in
+  a deploy-on-merge setup, silently stop reloads), and whatever the delegation text contained landing
+  in git history permanently. `demiurge delegate|verdict|distill|tenure --ledger-dir <path>` puts it
+  with the Archon's runtime state instead. Defaults to the Archon's stable dir, so existing callers
+  are unaffected. `archon_dir` still answers *which Archon* (tenure reports still take their id from
+  it); `ledger_dir` answers *where its churn goes*.
+
 ## [0.1.0] - 2026-07-06
 
 First release of Demiurge. This release delivers the full Archon lifecycle end-to-end — minting typed Agent Format specs, scaffolding and deploying them via the `claude-sdk` adapter, delegating work over A2A, and curating the stable through an eval-gated admission loop with tenure tracking and failure-driven revision. Archon Zero, the first Archon, is admitted into the stable as a self-referential proof of the loop.

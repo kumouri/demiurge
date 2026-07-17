@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from demiurge.curate.record import set_status
-from demiurge.delegate.ledger import LEDGER_FILENAME, is_delegation, read_ledger
+from demiurge.delegate.ledger import is_delegation, ledger_path, read_ledger
 
 VERDICT_OUTCOMES = ("success", "failure")
 
@@ -30,12 +30,13 @@ def record_verdict(
     task_id: str,
     outcome: str,
     note: str = "",
+    ledger_dir: Path | str | None = None,
 ) -> dict[str, Any]:
     """Record a human/caller judgment on a delegated task."""
     if outcome not in VERDICT_OUTCOMES:
         raise ValueError(f"invalid outcome '{outcome}' (valid: {', '.join(VERDICT_OUTCOMES)})")
     archon_dir = Path(archon_dir)
-    delegations = [entry for entry in read_ledger(archon_dir) if is_delegation(entry)]
+    delegations = [entry for entry in read_ledger(archon_dir, ledger_dir) if is_delegation(entry)]
     if not any(entry.get("task_id") == task_id for entry in delegations):
         raise ValueError(f"no delegation with task_id '{task_id}' in the ledger")
     entry = {
@@ -45,7 +46,9 @@ def record_verdict(
         "outcome": outcome,
         "note": note,
     }
-    with (archon_dir / LEDGER_FILENAME).open("a", encoding="utf-8") as ledger:
+    path = ledger_path(archon_dir, ledger_dir)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as ledger:
         ledger.write(json.dumps(entry, ensure_ascii=False) + "\n")
     return entry
 
@@ -60,10 +63,15 @@ class TenureReport:
     reasons: list[str]
 
 
-def tenure_review(archon_dir: Path | str, *, window: int = 20) -> TenureReport:
+def tenure_review(
+    archon_dir: Path | str,
+    *,
+    window: int = 20,
+    ledger_dir: Path | str | None = None,
+) -> TenureReport:
     """Summarize the last ``window`` delegations into a tenure recommendation."""
     archon_dir = Path(archon_dir)
-    entries = read_ledger(archon_dir)
+    entries = read_ledger(archon_dir, ledger_dir)
     verdicts = {
         entry["task_id"]: entry["outcome"]
         for entry in entries
