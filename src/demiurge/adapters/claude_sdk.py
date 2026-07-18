@@ -77,6 +77,7 @@ class ClaudeAgentSdkAdapter:
         *,
         port: int = 9999,
         timeout_seconds: float = 300.0,
+        model: str | None = None,
     ) -> Deployment:
         scaffold_dir = Path(scaffold_dir)
         uv = shutil.which("uv")
@@ -93,6 +94,8 @@ class ClaudeAgentSdkAdapter:
             "--port",
             str(port),
         ]
+        if model:  # deploy-time override of the spec's model — enables parallel instances
+            command += ["--model", model]
         env = os.environ.copy()
         if "ANTHROPIC_API_KEY" not in env and env.get(API_KEY_ENV):
             env["ANTHROPIC_API_KEY"] = env[API_KEY_ENV]

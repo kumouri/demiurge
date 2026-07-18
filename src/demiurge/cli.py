@@ -76,6 +76,12 @@ def main(argv: list[str] | None = None) -> int:
         )
     deploy_parser.add_argument("--port", type=int, default=9999)
     deploy_parser.add_argument(
+        "--model",
+        default=None,
+        help="model id override for the runtime (e.g. claude-fable-5) — deploy-time, so one archon "
+        "can run as parallel instances on different models and ports",
+    )
+    deploy_parser.add_argument(
         "--timeout",
         type=float,
         default=300.0,
@@ -223,7 +229,9 @@ def _cmd_deploy(args: argparse.Namespace) -> int:
             return exit_code
     adapter = get_adapter(args.adapter)
     try:
-        deployment = adapter.deploy(scaffold_dir, port=args.port, timeout_seconds=args.timeout)
+        deployment = adapter.deploy(
+            scaffold_dir, port=args.port, timeout_seconds=args.timeout, model=args.model
+        )
     except DeployError as error:
         print(f"demiurge: {error}", file=sys.stderr)
         return 1
