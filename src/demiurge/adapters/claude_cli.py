@@ -94,6 +94,7 @@ class ClaudeCliAdapter:
         *,
         port: int = 9999,
         timeout_seconds: float = 300.0,
+        model: str | None = None,
     ) -> Deployment:
         scaffold_dir = Path(scaffold_dir)
         uv = shutil.which("uv")
@@ -110,6 +111,8 @@ class ClaudeCliAdapter:
             "--port",
             str(port),
         ]
+        if model:  # deploy-time override of the spec's model — enables parallel instances
+            command += ["--model", model]
         with log_path.open("ab") as log:
             process = subprocess.Popen(
                 command,

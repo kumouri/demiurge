@@ -84,6 +84,12 @@ class RuntimeAdapter(Protocol):
         """Generate a runnable project for the Archon at ``archon_dir``."""
         ...
 
-    def deploy(self, scaffold_dir: Path, *, port: int, timeout_seconds: float) -> Deployment:
-        """Start the scaffolded Archon and block until it is A2A-addressable."""
+    def deploy(
+        self, scaffold_dir: Path, *, port: int, timeout_seconds: float, model: str | None = None
+    ) -> Deployment:
+        """Start the scaffolded Archon and block until it is A2A-addressable.
+
+        ``model`` (optional) overrides the model the spec declares — a deploy-time knob, so one
+        scaffold can run as parallel instances on different models and ports simultaneously.
+        """
         ...

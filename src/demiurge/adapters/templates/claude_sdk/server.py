@@ -67,10 +67,10 @@ def mcp_options(
 class ArchonExecutor(AgentExecutor):
     """Runs the spec's agf.react policy on the Claude Agent SDK."""
 
-    def __init__(self, spec: dict[str, Any]) -> None:
+    def __init__(self, spec: dict[str, Any], model_override: str | None = None) -> None:
         config = spec["execution_policy"]["config"]
         self._instructions: str = config["instructions"]
-        self._model: str | None = config.get("model")
+        self._model: str | None = model_override or config.get("model")
         self._max_steps: int = int(config.get("max_steps", 10))
         self._mcp_servers, self._allowed_tools = mcp_options(spec)
 
@@ -122,7 +122,7 @@ class ArchonExecutor(AgentExecutor):
         raise NotImplementedError("cancel is not supported")
 
 
-def build_app(spec: dict[str, Any], port: int) -> Starlette:
+def build_app(spec: dict[str, Any], port: int, model: str | None = None) -> Starlette:
     metadata = spec["metadata"]
     endpoint = f"http://127.0.0.1:{port}"
     skill = AgentSkill(
@@ -146,7 +146,7 @@ def build_app(spec: dict[str, Any], port: int) -> Starlette:
         skills=[skill],
     )
     handler = DefaultRequestHandler(
-        agent_executor=ArchonExecutor(spec),
+        agent_executor=ArchonExecutor(spec, model),
         task_store=InMemoryTaskStore(),
         agent_card=card,
     )
@@ -158,9 +158,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Serve a Demiurge Archon over A2A.")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=9999)
+    parser.add_argument("--model", default=None, help="override the spec's model (deploy-time)")
     args = parser.parse_args()
     spec = yaml.safe_load(SPEC_PATH.read_text(encoding="utf-8"))
-    uvicorn.run(build_app(spec, args.port), host=args.host, port=args.port)
+    uvicorn.run(build_app(spec, args.port, args.model), host=args.host, port=args.port)
 
 
 if __name__ == "__main__":

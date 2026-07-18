@@ -127,6 +127,21 @@ def test_build_cli_command_composes_the_one_shot_invocation(tmp_path):
         assert flag not in bare
 
 
+def test_deploy_time_model_override_beats_the_spec(tmp_path):
+    # The deploy-time knob (any archon on any model; parallel instances on different models): a
+    # --model passed at deploy overrides whatever the spec declared. Without it, the spec's model
+    # still wins — so existing deployments are unchanged.
+    minted = _minted_archon(tmp_path)
+    adapter = get_adapter("claude-cli")
+    result = adapter.scaffold(minted.archon_dir, tmp_path / "scaffolds")
+    server = _load_generated_server(result.scaffold_dir)
+    spec = yaml.safe_load((result.scaffold_dir / "archon.agf.yaml").read_text(encoding="utf-8"))
+    spec["execution_policy"]["config"]["model"] = "claude-opus-4-8"
+
+    assert server.ArchonExecutor(spec, "claude-fable-5")._model == "claude-fable-5"  # override wins
+    assert server.ArchonExecutor(spec)._model == "claude-opus-4-8"  # else the spec's model
+
+
 def test_env_scrub_drops_the_api_key(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-should-never-leak")
     monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "subscription-token")
