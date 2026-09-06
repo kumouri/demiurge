@@ -41,6 +41,13 @@ CLI_MCP_CONFIG_PATH = Path(__file__).resolve().parent / "cli-mcp-config.json"
 # Overridable knobs (env), all optional:
 CLI_BIN_ENV = "CLAUDE_CLI_BIN"  # path to the claude CLI (default: "claude" on PATH)
 PERMISSION_MODE_ENV = "CLAUDE_CLI_PERMISSION_MODE"  # e.g. "default", "acceptEdits"
+# os.pathsep-joined extra directories for the CLI's own --add-dir. The delegated `claude -p`
+# subprocess always runs with cwd pinned to this scaffold directory (see _invoke below), so by
+# default its Read/Grep/Glob/Bash tools can see nothing outside the scaffold — regardless of what
+# the spec's action_space.local_tools grants. That confinement is deliberate (an Archon shouldn't
+# wander the operator's whole disk by default); an operator who needs a specific deployment to
+# read real, wider state opts it in per-deploy via this env var rather than by loosening the spec.
+ADD_DIR_ENV = "CLAUDE_CLI_ADD_DIR"
 DEFAULT_TIMEOUT_SECONDS = 600.0  # used when the spec declares no duration budget
 
 
@@ -114,6 +121,7 @@ def build_cli_command(
     allowed_tools: list[str],
     mcp_config_file: Path | None,
     permission_mode: str | None,
+    add_dirs: list[str] | None = None,
 ) -> list[str]:
     """Compose the one-shot `claude -p` invocation for a delegated task (pure)."""
     command = [
@@ -135,6 +143,8 @@ def build_cli_command(
         command += ["--mcp-config", str(mcp_config_file), "--strict-mcp-config"]
     if permission_mode:
         command += ["--permission-mode", permission_mode]
+    if add_dirs:
+        command += ["--add-dir", *add_dirs]
     return command
 
 
@@ -162,6 +172,7 @@ class ArchonExecutor(AgentExecutor):
         # (health checks, admission plumbing) even when the CLI is missing.
         cli_bin = os.environ.get(CLI_BIN_ENV, "claude")
         cli_bin = shutil.which(cli_bin) or cli_bin
+        add_dirs = [d for d in os.environ.get(ADD_DIR_ENV, "").split(os.pathsep) if d]
         command = build_cli_command(
             cli_bin=cli_bin,
             user_request=user_request,
@@ -170,6 +181,7 @@ class ArchonExecutor(AgentExecutor):
             allowed_tools=self._allowed_tools,
             mcp_config_file=self._mcp_config_file,
             permission_mode=os.environ.get(PERMISSION_MODE_ENV),
+            add_dirs=add_dirs,
         )
         process = await asyncio.create_subprocess_exec(
             *command,

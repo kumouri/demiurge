@@ -1,8 +1,10 @@
 """The claude-cli adapter (ADR 0006): scaffold layout, CLI wiring, billing scrub."""
 
 import ast
+import asyncio
 import importlib.util
 import json
+import os
 import tomllib
 from pathlib import Path
 
@@ -123,8 +125,62 @@ def test_build_cli_command_composes_the_one_shot_invocation(tmp_path):
         mcp_config_file=None,
         permission_mode=None,
     )
-    for flag in ("--model", "--allowedTools", "--mcp-config", "--permission-mode"):
+    for flag in ("--model", "--allowedTools", "--mcp-config", "--permission-mode", "--add-dir"):
         assert flag not in bare
+
+
+def test_build_cli_command_add_dir_widens_the_scaffold_cwd_confinement(tmp_path):
+    # The delegated subprocess's cwd is always pinned to the scaffold dir (see _invoke), so by
+    # default a spec's Read/Grep/Glob grant can't reach anything else on disk regardless of what
+    # the grant text promises. --add-dir is the operator's per-deploy opt-in to wider real access.
+    minted = _minted_archon(tmp_path)
+    adapter = get_adapter("claude-cli")
+    result = adapter.scaffold(minted.archon_dir, tmp_path / "scaffolds")
+    server = _load_generated_server(result.scaffold_dir)
+
+    command = server.build_cli_command(
+        cli_bin="claude",
+        user_request="do the thing",
+        instructions="You are a test Archon.",
+        model=None,
+        allowed_tools=[],
+        mcp_config_file=None,
+        permission_mode=None,
+        add_dirs=["/repo/root", "/other/dir"],
+    )
+    add_dir_index = command.index("--add-dir")
+    assert command[add_dir_index + 1 : add_dir_index + 3] == ["/repo/root", "/other/dir"]
+
+
+def test_invoke_reads_add_dirs_from_the_env_var(tmp_path, monkeypatch):
+    minted = _minted_archon(tmp_path)
+    adapter = get_adapter("claude-cli")
+    result = adapter.scaffold(minted.archon_dir, tmp_path / "scaffolds")
+    server = _load_generated_server(result.scaffold_dir)
+    spec = yaml.safe_load(server.SPEC_PATH.read_text(encoding="utf-8"))
+    executor = server.ArchonExecutor(spec)
+
+    seen: dict = {}
+
+    async def fake_exec(*command, **kwargs):
+        seen["command"] = command
+
+        class _Proc:
+            returncode = 0
+
+            async def communicate(self):
+                return b"ok", b""
+
+        return _Proc()
+
+    monkeypatch.setenv(server.ADD_DIR_ENV, os.pathsep.join(["/repo/root", "/scratch"]))
+    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_exec)
+    result_text = asyncio.run(executor._invoke("do the thing"))
+
+    assert result_text == "ok"
+    command = list(seen["command"])
+    add_dir_index = command.index("--add-dir")
+    assert command[add_dir_index + 1 : add_dir_index + 3] == ["/repo/root", "/scratch"]
 
 
 def test_deploy_time_model_override_beats_the_spec(tmp_path):

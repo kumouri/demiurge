@@ -54,3 +54,11 @@ the reference). Same minted spec, same scaffold shape — a standalone uv projec
 - `local_tools` grants widen an Archon's action surface to the CLI's built-ins (notably
   `Bash`); charters and need statements must treat such grants as consciously as MCP grants —
   scoped specifiers (`Bash(python *)`) are supported and preferred.
+- The delegated `claude -p` subprocess always runs with its cwd pinned to the scaffold
+  directory, so a spec's `local_tools` grant of `Read`/`Grep`/`Glob` only reaches files under
+  the scaffold, regardless of what the grant text says — the CLI's own directory sandbox, not
+  something this adapter enforces. An operator who needs a specific deployment to read real,
+  wider state sets `CLAUDE_CLI_ADD_DIR` (an `os.pathsep`-joined list of directories) before
+  `deploy`, which is passed through as `--add-dir`. This widens *filesystem reach* for one
+  deployment; it is not a substitute for a spec's tool grants and does not add write access
+  beyond what the CLI's own permission mode already allows.
